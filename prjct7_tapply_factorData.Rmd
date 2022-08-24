@@ -1,0 +1,271 @@
+---
+title: "FOR/STT 875, Exercise 7"
+output: html_document
+---
+
+## Learning objectives
+  + Introduce `with`, `tapply`, and `cut` functions
+  + Summarize data using the `table` function with logical subsetting
+  + Practice using factor data types
+  
+## Overview
+Modify this R Markdown file by filling in the code needed to answer the questions.
+
+## Submission instructions
+Upload your exercise_7.Rmd and exercise_7.html files to the Exercise 7 D2L dropbox. 
+
+## Grading
+
+Exercise 5 consists of 6 possible points. For final grading, the exercise will be scaled to a grade out of 10 total points so that each exercise is worth the same amount. Although not graded, please fill in the feedback [questions](#questions) at the end of the exercise. 
+
++ 1 point for the R Markdown document compiling without error. 
++ 1 point for each TODO (5 possible points). Partial credit will be awarded if the answer is not correct but displays some level of understanding of the underlying concept. 
+
+## Getting started
+Again, set some global options to make the R code printed in the html output look nice.
+
+```{r global_options}
+knitr::opts_chunk$set(comment = NA)
+```
+
+### Three functions: `table`, `cut`, and `tapply`
+
+The `table`, `cut`, and `tapply` functions are very handy for partitioning and summarizing data sets. We'll use these functions to summarize World Bank data on life expectancy, GDP, fertility rate, population, etc., for countries over the years 1960-2014 (these data share some similarities with the `gapminder` data we have worked with previously). As of R 4.0.0, the `read.table` and related functions like `read.csv` do not assume character columns are factors by default (see, [R 4.0.0 r-devel news](https://cran.r-project.org/doc/manuals/r-devel/NEWS.html) and/or [The R Blog - R Developer Page](https://developer.r-project.org/Blog/public/2020/02/16/stringsasfactors/index.html) for the developers' perspective on this change). For the subsequent analysis, we generally want character columns (i.e., variables) to be treated as factors, so we set the `stringsAsFactors` argument in the call to `read.csv` to `TRUE` (note, if we forgot to read these columns in as factors, we could always convert them to factors later in the code using, e.g., the `as.factor` function).
+
+```{r}
+WorldBank <- read.csv("http://www.finley-lab.com/files/data/WorldBank.csv", header = TRUE, 
+                      stringsAsFactors = TRUE)
+str(WorldBank)
+```
+
+The region values in the data set are informative but lengthy. 
+
+```{r}
+levels(WorldBank$region)
+```
+Let's create a `region2` variable with shorter but less descriptive values, for simplicity. 
+
+```{r}
+WorldBank$region2 <- WorldBank$region
+levels(WorldBank$region2) <- c("EastAsia", "Europe", "LatAmer", "MideastAndNorthAfrica", "NorthAmer", "SouthAsia", "SubSaharanAfrica")
+```
+
+## The `table` function
+
+We have seen the `table` function before. The `table` function returns a one, two, three, or higher dimensional contingency table. For example, we can try to tabulate the number of countries in each region.
+
+```{r}
+table(WorldBank$region2)
+```
+
+Recall, tables can easily be sorted.
+
+```{r}
+sort(table(WorldBank$region2))
+sort(table(WorldBank$region2), decreasing = TRUE)
+```
+
+These tables aren't quite what we wanted, however, since each country appears multiple times, once for each year. We need to divide by the number of unique years in the data set. First, calculate the number of unique years in the data set.
+
+```{r}
+#Number of unique years
+n.years <- length(unique(WorldBank$year))
+```
+
+Now divide the original table by the number of unique years to obtain a table that counts each country only once.
+
+```{r}
+#Use table to tabulate the number of countries per region
+sort(table(WorldBank$region2))/n.years
+```
+
+The `table` function can also take a logical vector as input. For example, we can tabulate the number of countries which have life expectancy less than or equal to, or greater than, 60 years.
+
+```{r}
+table(WorldBank$life.expectancy > 60)
+```
+
+Here again countries are counted more than once, but that may be what is wanted in this case. In the first case it was more clear what the table was representing, but in this case `FALSE` and `TRUE` by themselves don't provide much clarity. The `dnn` argument can be used to provide a label for the table. Don't forget to look at the documentation for the `table` function (`?table`) if you are curious why the argument is labeled `dnn`.
+
+```{r}
+table(WorldBank$life.expectancy > 60, dnn = "Life Expectancy more than 60 years")
+```
+
+Next we investigate the two-way frequency table relating life expectancy and region.
+
+```{r}
+table(WorldBank$region2, WorldBank$life.expectancy > 60)
+```
+
+Again, labels would help. Create the same table, but use the `dnn` argument to add both row and column labels. (You'll need to give a length two character vector as the value of `dnn`.)
+
+```{r}
+# TODO 7.1: Create the labeled two-way table here
+
+#create var x as an input for dnn table
+a <- table(WorldBank$region2, WorldBank$life.expectancy > 60, dnn = c('Region', 'Life Expectancy more than 60 years'))
+
+#change True/False to more descriptive headers
+colnames(a)[colnames(a) == "FALSE"] = "Less Than 60 Years Old"
+colnames(a)[colnames(a) ==  "TRUE"] = "Greater Than 60 Years Old"
+
+a
+
+```
+
+##The `with` function
+
+The `$` method of referring to a variable in a data frame can lead to messy code. The `with` function provides a sometimes preferable way to specify variables. Here is an example that creates the one-way frequency table of life expectancy using `with`.
+
+```{r}
+with(WorldBank, table(life.expectancy > 60, dnn = "Life Expectancy more than 60 years"))
+```
+
+Next use `with` to create the two-way table of region and life expectancy with row and column labels.
+
+```{r}
+# TODO 7.2: Create the table here
+
+a <- with(WorldBank, table(region2, life.expectancy > 60, dnn = c('Region', 'Life Expectancy more than 60 years')))
+
+#change True/False to more descriptive headers
+colnames(a)[colnames(a) == "FALSE"] = "Less Than 60 Years Old"
+colnames(a)[colnames(a) ==  "TRUE"] = "Greater Than 60 Years Old"
+
+a
+```
+
+## Using `tapply`
+
+Consider investigating mean life expectancy by region. For example we could compute the mean life expectancy by region.
+
+```{r}
+with(WorldBank, mean(life.expectancy[region2 == "EastAsia"]))
+```
+
+The function returned `NA` since there are some missing observations. Add the argument `na.rm = TRUE` to the mean function to get the mean of the non-missing observations.
+```{r}
+# TODO 7.3: Compute the mean of the non-missing life expectancies for EastAsia here
+
+with(WorldBank, mean(life.expectancy[region2 == "EastAsia"], na.rm = TRUE))
+```
+
+We could continue in this way:
+
+```{r}
+with(WorldBank, mean(life.expectancy[region2 == "Europe"], na.rm = TRUE))
+with(WorldBank, mean(life.expectancy[region2 == "LatAmer"], na.rm = TRUE))
+```
+
+Etc.
+
+But there's an easier way, using the `tapply` function.
+
+```{r}
+with(WorldBank, tapply(X = life.expectancy, INDEX = region2, FUN = mean, na.rm = TRUE ))
+```
+
+The function `tapply` takes an "atomic object" (typically a vector) as the argument `X`, a list of one or more factors of the same length as `X` as the `INDEX`, a function as the `FUN`, and possibly arguments to the function such as `na.rm = TRUE`. 
+
+Here a second factor `income` is added. 
+```{r}
+with(WorldBank, tapply(X = life.expectancy, INDEX = list(region2, income), FUN = mean, na.rm = TRUE ))
+```
+
+##Using `cut` to create factors
+Consider investigating the mean life expectancy for countries by latitude. For example, do countries in tropical latitudes have higher or lower life expectancy than countries in temperate latitudes? We will use the following latitude divisions:
+
++ $23.5 \leq \text{lat} \leq 66.5$: Northern temperate
++ $0 \leq \text{lat} < 23.5$: Northern tropics
++ $-23.5 \leq \text{lat} < 0$: Southern tropics
++ $-66.5 \leq \text{lat} < -23.5$: Southern temperate
+
+(The frigid zones are omitted since none of the countries in the data set lie in these zones.)
+
+We can compute the mean life expectancy in each zone using logical subsetting. For example, here we compute the mean life expectancy in the northern tropics. (We're also averaging over years, of course.)
+
+
+```{r}
+with(WorldBank, mean(life.expectancy[0 <= latitude & latitude < 23.5], na.rm = TRUE))
+```
+
+Next, calculate the mean life expectancy for the southern tropics.
+
+```{r}
+# TODO 7.4: Compute the mean life expectancy for the southern tropics here
+
+with(WorldBank, mean(life.expectancy[-23.5 <= latitude & latitude < 0], na.rm = TRUE))
+```
+
+We could continue in this way, but there is an easier way, using the `cut` function to create the factor we want.
+
+First let's look at cut in a simple context. 
+
+```{r}
+x <- 0:50
+cut(x, breaks = c(0, 10, 20, 30, 40, 50))
+cut(x, breaks = c(0, 10, 20, 30, 40, 50), include.lowest = TRUE)
+cut(x, breaks = c(0, 10, 20, 30, 40, 50), right = FALSE)
+cut(x, breaks = c(0, 10, 20, 30, 40, 50), right = FALSE, include.lowest = TRUE)
+cut(x, breaks = c(0, 10, 20, 30, 40, 50), labels = c("low", "midlow", "mid", "midhigh", "high"), include.lowest = TRUE)
+```
+
+As we can see, `cut` divides the range of our vector into intervals and labels each vector member accordingly. By default, the divisions are labeled by the range (like `[0,10)`), but the `labels` argument can take in a custom vector of labels.
+
+Now use `tapply` to calculate mean life expectancy by latitude region, with `cut` defining the factor which will separate countries into northern temperate, northern tropical, southern tropical, and southern temperate regions. Include appropriate labels for the latitude regions. Which latitudinal region has the highest and lowest mean life expectancy?
+
+```{r}
+# TODO 7.5: Calculate the mean life expectancies here
+
+#by lat region
+#+ $23.5 \leq \text{lat} \leq 66.5$: Northern temperate
+#+ $0 \leq \text{lat} < 23.5$: Northern tropics
+#+ $-23.5 \leq \text{lat} < 0$: Southern tropics
+#+ $-66.5 \leq \text{lat} < -23.5$: Southern temperate
+
+with(WorldBank, tapply (X=life.expectancy, INDEX = cut(latitude, breaks = c(-66.5, -23.5, 0, 23.5, 66.5),labels = c("southern temperate", "southern tropical", "northern tropical", "northern temperate"), include.lowest = TRUE, right = FALSE), FUN = mean, na.rm = TRUE))
+
+#Highest= northern temperate
+#Lowest= southern tropical
+
+```
+
+## Challenge Question
+
+This question **will not be graded** and is provided for additional practice building your `R` skills. This is a *challenge* question, and thus not all material has been (or will be) covered. 
+
+[Principal components analysis](https://en.wikipedia.org/wiki/Principal_component_analysis) (PCA) is a statistical technique used for data reduction. In practice, we often see PCA used when a researcher wishes to find a reduced set of composite variables that explain much of the variability in a larger set of potentially correlated variables. The reduced set of composite variables are called the principal components (PCs) and are derived in such a way as to maximize the variance explained in the larger set of variables. These PCs can be used in [exploratory data analysis](https://en.wikipedia.org/wiki/Exploratory_data_analysis) (EDA) and/or as explanatory variables in a regression setting (e.g., [principal components regression](https://en.wikipedia.org/wiki/Principal_component_regression)). From an EDA perspective, consider the setting where you wish to understand if there are differences among groups defined by some characteristic (e.g., health or socioeconomic status, treatment, or geographic region) based on a large set of potentially correlated variables. Most EDAs start with simple graphics and other data visualization tools, but trying to detect group patters across a large number of variables can be challenging. Hence, if we can *distill* the large set of potentially redundant variables into PCs that capture the dominant characteristics in two or three derived variables, then visualization of group patterns becomes much more manageable. This idea motivates the challenge question.
+
+Here, we ask you to perform a PCA on the following variables in the `WorldBank` data set: `fertility.rate`, `life.expectancy`, `population`, `GDP.per.capita.Current.USD`, and `X15.to.25.yr.female.literacy`. Many of these variables are correlated, and thus we could potentially use PCA to reduce the number of variables we are looking at by considering a set of composite "socioeconomic variables", i.e., PCs. You should perform a PCA on these variables, assess the results of the PCA, and then produce a biplot for the first two PCs showing how the different regions are related to each other in terms of these components by plotting the points with different colors for each region. Consider following these steps: 
+
+1. Install and load the `ggbiplot` package for producing a biplot. Note: this will also install a couple other packages if they aren't already installed, including `ggplot2`. If `ggbiplot` is not available via CRAN then you can install the development version from [https://github.com/vqv/ggbiplot](https://github.com/vqv/ggbiplot).
+2. Subset the `WorldBank` data set to only grab the variables you will include in the PCA, as well as the `region2` variable. You will also want to remove any rows of these variables that contain any `NA` values (as PCA does not accommodate `NA`s). I find the `na.omit` function useful for this. 
+3. Perform the PCA using the `prcomp` function. You will want to make sure to center and scale the variables. 
+4. Use the `summary` function to assess results of the PCA. 
+5. Use the `ggbiplot` function to produce a plot of the first principal component vs the second principal component. Plot the points in the graph so that each region has a different color. 
+6. Interpret the results.
+
+******
+
+Congratulations! You've reached the end of Exercise 7.
+
+### Questions?
+
+If you have any lingering questions about the material in this document or in the corresponding chapter, put them here.
+
+*Response...*
+
+
+### Give us your feedback!
+
+1.  How do you feel you're doing in this class?
+
+*Response...*
+
+2.  What could be done to improve your learning experience?
+
+*Response...*
+
+
+
+*******
