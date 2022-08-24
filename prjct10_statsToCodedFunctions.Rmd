@@ -1,0 +1,135 @@
+---
+title: "FOR/STT 875, Exercise 10"
+output: html_document
+---
+
+## Overview
+This exercise uses statistical distributions to motivate learning about functions and provide some practice converting algorithms into code. You don’t need to know anything about statistics to successfully complete this exercise.
+
+## Submission instructions
+Upload your exercise_10.Rmd and exercise_10.html files to the Exercise 10 D2L dropbox. 
+
+## Grading
+
+Exercise 10 consists of 5 possible points. For final grading, the exercise will be scaled to a grade out of 10 total points so that each exercise is worth the same amount. Although not graded, please fill in the feedback questions at the end of the exercise.
+
++ 1 point for the R Markdown document compiling without error.
++ 1 point for each TODO (4 total points). Partial credit will be awarded if the answer is not correct but displays some level of understanding of the underlying concept.
+
+## Getting started
+Again, set some global options to make the R code printed in the HTML output look nice.
+
+R provides functions that return useful characteristics of many common statistical distributions. The naming convention for these functions is a prefix, which identifies what the function does, followed by an abbreviation of the statistical distribution’s name. These prefixes are:
+
+p for “probability”, the cumulative distribution function (CDF)
+q for “quantile”, the inverse CDF
+d for “density”, the density function (PDF)
+r for “random”, a random variable having the specified distribution.
+
+```{r global_options}
+knitr::opts_chunk$set(comment = NA)
+```
+
+
+```{r, message = FALSE}
+
+```
+
+
+```{r}
+## TODO 10.1: write your `qpareto.1` function and show that it returns the same answers as the three tests below
+
+qpareto.1 <- function(p, alpha, x0){
+  
+  Qp <- x0 * (1-p)^(-1/ (alpha-1))
+  return(Qp)
+} 
+
+qpareto.1(p = 0.5, alpha = 3.5, x0 = 1)
+qpareto.1(p = 0.5, alpha = 2.34, x0 = 6e+08)
+qpareto.1(p = 0.92, alpha = 2.5, x0 = 1e+06)
+
+```
+
+
+```{r}
+## TODO 10.2: write your `qpareto.2` function and shows that it returns the same answers as the two tests below
+
+qpareto.2 <- function(p, alpha, x0, lower.tail = TRUE) {
+    if (lower.tail == FALSE) {
+        p <- 1 - p
+    }
+    q <- qpareto.1(p, alpha, x0)
+    return(q)
+}
+
+qpareto.2(p = 0.5, alpha = 3.5, x0 = 1)
+
+qpareto.2(p = 0.08, alpha = 2.5, x0 = 1e+06, lower.tail = FALSE)
+
+
+```
+
+
+```{r}
+## TODO 10.3: write your `qpareto` function and shows that it returns the same answers as the five tests below
+
+qpareto.2 <- function(p, alpha, x0, lower.tail = TRUE) {
+  stopifnot(p > 0, p < 1, alpha > 1, x0 > 0) 
+    if (lower.tail == FALSE) {
+        p <- 1 - p
+    }
+    q <- qpareto.1(p, alpha, x0)
+    return(q)
+}
+```
+
+
+```{r}
+## TODO 10.4: write your `normal.mle` function and shows that it returns the same answers as the three tests below
+
+normal.mle <- function(xi)
+  {
+  stopifnot(length(xi) >= 2, is.numeric(xi) == TRUE)
+  mean_hat <- sum(xi)/ length(xi)
+  var_hat <- sum((xi - mean_hat)^2)/ length(xi)
+  return(list(mean_hat = mean_hat, var_hat = var_hat))
+}
+
+normal.mle(c(1, 2, 1, 4))
+
+normal.mle(c("a", "b"))
+
+normal.mle(1)
+```
+
+
+
+## Challenge Question
+
+This question **will not be graded** and is provided for additional practice building your `R` skills. This is a *challenge* question, and thus not all material has been (or will be) covered. 
+
+
+
+******
+
+Congratulations! You've reached the end of Exercise 9.
+
+### Questions?
+
+If you have any lingering questions about the material in this document or in the corresponding chapter, put them here.
+
+*Response...*
+
+
+### Give us your feedback!
+
+1.  How do you feel you're doing in this class?
+
+*Response...*
+
+2.  What could be done to improve your learning experience?
+
+*Response...*
+
+*******
